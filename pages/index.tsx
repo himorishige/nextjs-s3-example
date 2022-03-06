@@ -23,7 +23,7 @@ const Home: NextPage = () => {
       });
 
       if (upload.ok) {
-        console.log('Uploaded successfully!');
+        alert('Uploaded successfully!');
       } else {
         console.error('Upload failed.');
       }
