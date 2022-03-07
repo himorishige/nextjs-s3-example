@@ -24,7 +24,7 @@ const Home: NextPage = () => {
         <Link href="/get">PreSigned Path</Link>
         <Link href="/image">API Path</Link>
       </nav>
-      <h1>Get Image</h1>
+      <h1>Get PreSigned Image Path</h1>
       <img src={image} alt="" width={300} height={300} />
     </div>
   );
