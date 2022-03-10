@@ -1,34 +1,99 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# nextjs-s3-example
 
-## Getting Started
+## 概要
 
-First, run the development server:
+[Sample Site](https://nextjs-s3-example.vercel.app/)
 
-```bash
-npm run dev
-# or
-yarn dev
+## はじめに
+
+Next.jsを利用したS3バケットへ署名付きURLを利用してファイルをアップロード、また署名付きURLの取得、API経由でファイルを取得するサンプルになります。
+
+フロントエンドではAWSの認証情報を持たずバックエンドのAPIがAWSとやり取りする形を想定しています。またフロントエンドとバックエンドの間には別途認証・認可が設定されることを前提としています。
+
+今回のサンプルではNext.jsのAPI機能を利用してフロントエンドとバックエンドを擬似的に分離しています。
+
+## 動作イメージ
+
+### 1.アップロード
+
+```mermaid
+sequenceDiagram
+    Client->>API: ファイル名を送信 
+    API->>S3: アップロード用署名付きURLの発行依頼
+    S3--)API: 署名付きURL
+		API--)Client: 署名付きURL
+		Client->>S3: 署名付きURLを利用したファイルの送信
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `api/upload.ts`
+    
+    `s3.getPresignedUrl`を利用せず`s3.createPresignedPost`を利用することでファイルサイズの制限を利用することが可能
+    
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+### 2.画像の表示（署名付きURLを利用）
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+```mermaid
+sequenceDiagram
+    Client->>API: 表示したいファイル名を送信 
+    API->>S3: ダウンロード用署名付きURLの発行依頼
+    S3--)API: 署名付きURL
+		API--)Client: 署名付きURL
+		Client-->>S3: 署名付きURLを利用して画像を取得
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+- `api/get.ts`
+    
+    ファイル名を受け取り署名付きURLを返すAPI。資料PDFなど一定期間ユーザーがダウンロードすることができるような用途での利用が多い。署名付きURLがを取得後再度画像の取得が必要なため手数が多くなる
+    
 
-## Learn More
+### 3.画像の表示（署名付きURLを利用しない）
 
-To learn more about Next.js, take a look at the following resources:
+```mermaid
+sequenceDiagram
+    Client->>API: 表示したいファイル名を送信 
+    API->>S3: 画像を取得（署名付きURL未使用）
+    S3--)API: 画像ファイル
+		API--)Client: 画像ファイル
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `api/image.ts`
+    
+    署名付きURLは介せずに画像ファイルを直接返すAPI。フロントエンドで表示する用途としては使いやすく汎用性が高い
+    
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Next.jsに必要な設定
 
-## Deploy on Vercel
+Next.jsのAPIがAWSサービスへ直接接続するため環境変数を利用した認証情報が必要になります。フロントエンドでは利用しません。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# .env.local
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+ACCESS_KEY=******
+SECRET_KEY=******
+REGION=ap-northeast-1
+BUCKET_NAME=S3バケット名
+```
+
+## CORSの設定
+
+S3バケットへJSアプリケーションからファイルを送るには`Cross-Origin Resource Sharing (CORS)`の設定が必要（今回利用しているのは`POST`のみ）
+
+```json
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "PUT",
+            "POST",
+            "DELETE"
+        ],
+        "AllowedOrigins": [
+            "http://localhost:3000",
+            "https://nextjs-s3-example.vercel.app"
+        ],
+        "ExposeHeaders": []
+    }
+]
+```
