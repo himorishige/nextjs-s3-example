@@ -1,7 +1,10 @@
 import aws from 'aws-sdk';
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   aws.config.update({
     accessKeyId: process.env.ACCESS_KEY,
     secretAccessKey: process.env.SECRET_KEY,
@@ -9,6 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     signatureVersion: 'v4',
   });
 
+  // getPresignedUrlを利用せずcreatePresignedPostを利用することでファイルサイズの制限を利用することが可能
   const s3 = new aws.S3();
   const post = await s3.createPresignedPost({
     Bucket: process.env.BUCKET_NAME,

@@ -4,13 +4,19 @@ import { ChangeEvent } from 'react';
 import styles from '../styles/Home.module.css';
 
 const Home: NextPage = () => {
+  // 画像をアップロードする関数
   const uploadPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      // フォームに登録された画像名をAPIへ送信
       const file = e.target.files[0];
       const filename = encodeURIComponent(file.name);
       const res = await fetch(`/api/upload?file=${filename}`);
-      const { url, fields }: { url: string; fields: Record<string, string> } =
+
+      // APIから署名付きURLを受け取る
+      const { url, fields }: { url: string; fields: Record<string, unknown> } =
         await res.json();
+
+      // APIから受け取ったURLへフォームに登録された画像ファイルを送信する
       const formData = new FormData();
 
       Object.entries({ ...fields, file }).forEach(([key, value]) => {
